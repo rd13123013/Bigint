@@ -84,6 +84,56 @@ class bigint
       return (x);
     }
 
+    bool operator>(const bigint &val) const
+    {
+      if( sign != val.sign )
+        return sign > val.sign;
+
+      if( num.size() != val.num.size() )
+        return num.size() > val.num.size();
+
+      int max_size = num.size() , i;
+      for( i = max_size - 1 ; i>= 0 ; --i)
+      {
+        if( num[i] != val.num[i])
+          return num[i] > val.num[i];
+      }
+      return false;
+    }
+
+    bool operator <(const bigint &val) const
+    {
+      return val > *this;
+    }
+
+    bool operator <=(const bigint &val ) const
+    {
+      return !( *this > val );
+    }
+
+    bool operator >=(const bigint &val ) const
+    {
+      return !(*this < val);
+    }
+
+    bool operator ==(const bigint &val) const
+    {
+      return !( (*this < val ) && (*this > val ) );
+    }
+
+    bool operator!=(const bigint &val ) const
+    {
+      return !(*this == val );
+    }
+
+    void trim()
+    {
+      while( a.size() && a.back()== 0 )
+        a.pop_back();
+      if( a.size() == 0 )
+        sign = 1;
+    }
+      
     bigint operator+( const bigint &x)  // binary + operator
     {
       if( x.sign * sign == -1 )       // check for sign
@@ -262,6 +312,8 @@ class bigint
     {
       *this = (*this) % val;
     }
+
+
 
 
 
