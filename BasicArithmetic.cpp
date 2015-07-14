@@ -7,16 +7,17 @@ class bigint
 
     vector<int>num;
     int sign;
-    const int base = 1000000000;
-    const int base_digit = 9;
+    static const int base = 1000000000;
+    static const int base_digit = 9;
 
   public:
-    int givebase() {return base};
+    static int givebase() {return base;}
     void operate(const string &s);
     bigint abs() const;
     bool operator>(const bigint &x)const;
+    bool operator<(const bigint &x)const;
+    bigint operator/(int x )const;
     void trim();
-    
     bigint()
     {
       sign = 1;
@@ -113,6 +114,11 @@ class bigint
       }
     }
 
+    void operator+=(const bigint &x)
+    {
+      *this = *this + x;
+    }
+
     bigint operator-( const bigint&x) const
     {
       if( sign * x.sign == - 1)
@@ -141,6 +147,11 @@ class bigint
       else return -( x - *this);
     }
 
+    void operator-=(const bigint &x)
+    {
+      *this = *this - x;
+    }
+
     bigint operator*(int x ) const
     {
       bigint ans = *this;
@@ -162,10 +173,15 @@ class bigint
       return ans;
     }
 
-    pair<bigint , bigint>  disvison_mod(const bigint &x , const bigint &y)
+    void operator*=(const int &x)
     {
-      base = givebase();
-      int factor = (base / y.num.back() + 1);
+      *this = *this * x;
+    }
+
+    friend pair<bigint , bigint>  bigint_division_mode(const bigint &x , const bigint &y)
+    {
+      int base1 = givebase();
+      int factor = (base1 / y.num.back() + 1);
       bigint a = x*factor;
       bigint b = y*factor;
       bigint qut , rem;
@@ -194,6 +210,69 @@ class bigint
       rem.trim();
       return make_pair( qut , rem / factor );
     }
+
+    
+    bigint operator%(const bigint &x) const    // modulo operator
+    {
+      return bigint_division_mode(*this , x ).second;
+    }
+
+    bigint operator/(const bigint &x) const
+    {
+      return bigint_division_mode(*this , x).first;
+    }
+
+    friend pair<bigint , int> int_division_mode( const bigint &d , const int &val)
+    {
+      bigint y = d;
+      int x = val;
+      if( x < 0 )
+      {
+        y.sign *= -1;
+        x = -x;
+      }
+      int i , max_size = y.num.size() , remainder = 0;
+      long long int cur;
+      for( i = max_size - 1 ; i >= 0 ; --i)
+      {
+        cur =  ( remainder * 1LL * base ) + y.num[i];
+        y.num[i] = (int) ( cur / x );
+        remainder    = (int) ( cur % x );
+      }
+      y.trim();
+      return make_pair( y , remainder);
+    }
+
+    bigint operator /(const int &val)
+    {
+      return int_division_mode(*this,val).first;
+    }
+
+    bigint operator/=(const int &val)
+    {
+       *this = *this / val;
+    } 
+
+    int operator%(const int &val)
+    {
+      return int_division_mode(*this , val).second;
+    }
+
+    int operator%=(const int &val)
+    {
+      *this = (*this) % val;
+    }
+
+
+
+
+
+
+        
+
+
+
+
           
 
     
