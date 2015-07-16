@@ -5,19 +5,13 @@ class bigint
 {
   private:
 
-    vector<int>num;
     int sign;
     static const int base = 1000000000;
-    static const int base_digit = 9;
 
   public:
+    vector<int>num;
+    static const int base_digit = 9;
     static int givebase() {return base;}
-    void operate(const string &s);
-    bigint abs() const;
-    bool operator>(const bigint &x)const;
-    bool operator<(const bigint &x)const;
-    bigint operator/(int x )const;
-    void trim();
     bigint()
     {
       sign = 1;
@@ -126,12 +120,49 @@ class bigint
       return !(*this == val );
     }
 
+    bigint abs() const
+    {
+      bigint ans = *this;
+      ans.sign  = 1;
+      return ans;
+    }
+
+    void operate( const string &s)
+    {
+      num.clear();
+      sign = 1;
+      int index = 0 , i , x , j;
+
+      while( index < s.size() && (s[index] == '-' || s[index] == '+' ) )
+      {
+        if( s[index] == '-')
+          sign *= -1;
+        ++index;
+      }
+
+      for( i = s.size() - 1 ; i >= index ; i -= base_digit )
+      {
+        x = 0;
+        for( j = max( index , i - base_digit + 1 ) ; j <= i ; j++ )
+        {
+          x = x*10 ;
+          x += s[j] -'0';
+        }
+        num.push_back(x);
+      }
+      trim();
+    }
+
+      
     void trim()
     {
-      while( a.size() && a.back()== 0 )
-        a.pop_back();
-      if( a.size() == 0 )
+      while( !num.empty() && ( num.back()== 0 ) )
+        num.pop_back();
+      if( num.empty() )
+      {
         sign = 1;
+        num.push_back(0);
+      }
     }
       
     bigint operator+( const bigint &x)  // binary + operator
@@ -175,15 +206,13 @@ class bigint
       {
         return (-x) + *this ; // again don't want headache of sign ;)
       }
-      if( abs() > x.abs() )
+      if( abs() >= x.abs() )
       {
         bigint ans = *this;  //by taking the case when substarction will give positive ans , again don't want sign headache :p
-
         int max_size = x.num.size() , carry = 0 , i ;
-
-        for( i = 0 ; i < max_size || carry ; ++i)
+       for( i = 0 ; (i<max_size) || ( 0 != carry ); ++i)
         {
-          ans.num[i] -= ( carry + ( ( i < x.num.size() ) ? x.num[i] : 0 ) );
+          ans.num[i] -= ( carry + ( ( i < max_size ) ? x.num[i] : 0 ) );
           if( ans.num[i] < 0 )
           {
             ans.num[i] += base;
@@ -193,7 +222,7 @@ class bigint
         }
         ans.trim();
         return ans;
-    }
+      }
       else return -( x - *this);
     }
 
@@ -202,22 +231,23 @@ class bigint
       *this = *this - x;
     }
 
-    bigint operator*(int x ) const
+    bigint operator*(const int &val ) const
     {
+      int x = val;
       bigint ans = *this;
       if( x < 0 )
       {
         ans.sign *= -1;
         x = -x;
       }
-      int max_size = ans.num.size() , i , carry = 0;
-      for( i = 0 ; i < max_size || carry != 0 ; ++i)
+      int  i , carry = 0;
+      for( i = 0 ; (i < (int)ans.num.size()) || (carry != 0) ; ++i)
       {
-        if( i == max_size )
+      if( i == ans.num.size() )
           ans.num.push_back(0);
         long long int mul = ans.num[i] * 1LL * x + carry;
-        ans.num[i] = (int)(mul / base);
-        carry      = (int)(mul % base);
+        ans.num[i] = (int)(mul % base);
+        carry      = (int)(mul / base);
       }
       ans.trim();
       return ans;
@@ -239,11 +269,11 @@ class bigint
       int i , size_dsr = b.num.size();
       for( i = a.num.size() - 1 ; i >= 0 ; --i )
       {
-        rem = rem*base;
+        rem = rem*base1;
         rem = rem + a.num[i];
         int c1 = ( rem.num.size() <= size_dsr ? 0 : rem.num[size_dsr] );
         int c2 = ( rem.num.size() <= size_dsr-1? 0 : rem.num[size_dsr-1]);
-        int tmp = ( base*1LL*c1 + c2 ) / ( b.num.back() );
+        int tmp = ( base1*1LL*c1 + c2 ) / ( b.num.back() );
         rem = rem - (b*tmp);
         while( rem <0 )
         {
@@ -267,10 +297,22 @@ class bigint
       return bigint_division_mode(*this , x ).second;
     }
 
-    bigint operator/(const bigint &x) const
+    void operator%=(const bigint &x)     // modulo operator
+    {
+       *this  = ( *this %  x );
+     // *this = ans;
+    }
+
+    bigint operator/(const bigint &x) const 
     {
       return bigint_division_mode(*this , x).first;
     }
+
+    void operator/=(const bigint &x) 
+    {
+      *this = (*this / x );
+    }
+
 
     friend pair<bigint , int> int_division_mode( const bigint &d , const int &val)
     {
@@ -303,37 +345,61 @@ class bigint
        *this = *this / val;
     } 
 
-    int operator%(const int &val)
+    int operator%(const int &x)
     {
-      return int_division_mode(*this , val).second;
+      int val = x;
+      if( val < 0 )
+        val *= -1;
+      int rem = 0 , i;
+      int max_size = num.size();
+      for( i = max_size - 1 ; i >= 0 ; --i)
+        rem = ( num[i] + rem*1LL*base ) % val;
+     // cout << " answer is " << rem << endl;
+      return ( rem * sign );
     }
 
-    int operator%=(const int &val)
+    void operator%=(const int &val)
     {
-      *this = (*this) % val;
+      bigint ans = *this % val;
+      *this = ans;
     }
 
+    friend ostream& operator<<(ostream &stream, const bigint &val) {
+        if (val.sign == -1)
+            stream << '-';
+        stream << (val.num.empty() ? 0 : val.num.back());
+        int i , max_size = val.num.size();
+        for ( i = max_size - 2; i >= 0; --i)
+            stream << setw(base_digit) << setfill('0') << val.num[i];
+        return stream;
+    }
+
+    friend istream& operator>>(istream &stream , bigint &val )
+    {
+      string number;
+      stream >> number;
+      val.operate(number);
+      return stream;
+    }
+     
 
 
 
 
 
 
-
-        
-
-
-
-
-          
-
-    
-
-    
+       
 };
 
 int main()
 {
+  bigint a("78945612314789632%");
+  bigint b("14789");
+  int x = 12356;
+  cout << a << endl;
+  cout << x << endl;
+  a %= b;
+  cout << a << endl; 
   
 }  
 
